@@ -1,0 +1,61 @@
+# Maven
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+.mvn/wrapper/maven-wrapper.jar
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+.idea/libraries/
+.idea/modules.xml
+.idea/runConfigurations/
+.idea/workspace.xml
+
+# Eclipse
+.settings/
+.project
+.classpath
+
+# NetBeans
+nbproject/build-impl.xml
+nblib/
+
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+
+# Android
+android/key.properties
+android/app/src/main/res/values/googleservices.json
+*.keystore
+*.jks
+
+# iOS
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/ServiceDefinitions.json
+
+# Web
+build/web/
+
+# Windows
+windows/flutter/ephemeral/
+
+# Local Environment
+.env
+application-local.yml
+application-local.properties
+
+# Builds
+build/
+app-release.apk
