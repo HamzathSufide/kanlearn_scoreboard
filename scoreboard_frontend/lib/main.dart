@@ -1,12 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'firebase_options.dart';
+import 'auth/auth_service.dart';
+import 'screens/login_screen.dart';
+import 'screens/dashboard_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Catch Flutter framework errors and send to Crashlytics
+  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+
   runApp(const ScoreboardApp());
 }
 
 class ScoreboardApp extends StatelessWidget {
-  const ScoreboardApp({Key? key}) : super(key: key);
+  const ScoreboardApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -15,82 +28,67 @@ class ScoreboardApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
-        primaryColor: const Color(0xFFE50914), // Red
-        scaffoldBackgroundColor: const Color(0xFF0D0D0D), // Black Background
+        primaryColor: const Color(0xFFE50914),
+        scaffoldBackgroundColor: const Color(0xFF0D0D0D),
         colorScheme: const ColorScheme.dark(
           primary: Color(0xFFE50914),
-          secondary: Color(0xFFD4AF37), // Gold
-          background: Color(0xFF0D0D0D),
+          secondary: Color(0xFFD4AF37),
           surface: Color(0xFF1A1A1A),
         ),
         textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
+        navigationBarTheme: const NavigationBarThemeData(
+          backgroundColor: Color(0xFF1A1A1A),
+          indicatorColor: Color(0x33E50914),
+        ),
         useMaterial3: true,
       ),
-      home: const LoginPage(),
+      home: const _AuthGate(),
     );
   }
 }
 
-class LoginPage extends StatelessWidget {
-  const LoginPage({Key? key}) : super(key: key);
+/// Listens to Firebase Auth state and routes accordingly
+class _AuthGate extends StatelessWidget {
+  const _AuthGate();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.leaderboard_rounded, size: 80, color: Color(0xFFD4AF37)),
-              const SizedBox(height: 20),
-              Text(
-                'SCOREBOARD',
-                style: GoogleFonts.outfit(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2.0,
-                ),
-              ),
-              const SizedBox(height: 40),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: const Icon(Icons.email_outlined),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  filled: true,
-                  fillColor: const Color(0xFF1A1A1A)
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  filled: true,
-                  fillColor: const Color(0xFF1A1A1A)
-                ),
-              ),
-              const SizedBox(height: 30),
-              ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE50914),
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 5,
-                  shadowColor: const Color(0xFFE50914).withOpacity(0.5),
-                ),
-                child: const Text('L O G I N', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (ctx, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: Color(0xFF0D0D0D),
+            body: Center(
+              child: CircularProgressIndicator(color: Color(0xFFE50914)),
+            ),
+          );
+        }
+        if (snap.data == null) return const LoginScreen();
+        return _UserLoader(uid: snap.data!.uid);
+      },
+    );
+  }
+}
+
+class _UserLoader extends StatelessWidget {
+  final String uid;
+  const _UserLoader({required this.uid});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+      future: AuthService().getAppUser(uid),
+      builder: (ctx, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: Color(0xFF0D0D0D),
+            body: Center(child: CircularProgressIndicator(color: Color(0xFFE50914))),
+          );
+        }
+        if (snap.data == null) return const LoginScreen();
+        return DashboardScreen(user: snap.data!);
+      },
     );
   }
 }
