@@ -1,4 +1,4 @@
-package com.example.scoreboard_frontend
+package com.antigravity.scoreboard_frontend
 
 import io.flutter.embedding.android.FlutterActivity
 
